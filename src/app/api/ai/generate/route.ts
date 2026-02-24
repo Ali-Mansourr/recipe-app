@@ -95,13 +95,23 @@ export async function POST(req: Request) {
     const parsed = JSON.parse(content);
     return NextResponse.json(parsed);
   } catch (error: any) {
-    console.error("AI error:", error);
-    if (error?.status === 429) {
+    console.error("AI error:", error?.message || error);
+    const message = error?.message || "";
+    if (error?.status === 429 || message.includes("429") || message.includes("RATE_LIMIT")) {
       return NextResponse.json(
         { error: "Rate limit exceeded. Please try again in a moment." },
         { status: 429 }
       );
     }
-    return NextResponse.json({ error: "AI request failed" }, { status: 500 });
+    if (message.includes("API_KEY_INVALID") || message.includes("API key not valid")) {
+      return NextResponse.json(
+        { error: "Invalid API key. Please check your Gemini API key." },
+        { status: 401 }
+      );
+    }
+    return NextResponse.json(
+      { error: `AI request failed: ${message || "Unknown error"}` },
+      { status: 500 }
+    );
   }
 }
