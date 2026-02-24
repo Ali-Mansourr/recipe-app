@@ -16,7 +16,7 @@ A full-stack recipe management application built with Next.js, Prisma, and AI-po
 - Make recipes public for anyone to discover
 - Dedicated "Shared with Me" page
 
-### AI Features (OpenAI-powered)
+### AI Features (Groq-powered)
 - **Recipe Generator**: Describe what you want to cook or list available ingredients — AI creates a complete recipe
 - **Ingredient Substitution**: Find smart alternatives for any ingredient with dietary restriction support
 - **AI Auto-fill**: Automatically detect cuisine type, estimate prep/cook time, and suggest tags
@@ -38,7 +38,7 @@ A full-stack recipe management application built with Next.js, Prisma, and AI-po
 | Database | PostgreSQL (Neon) |
 | ORM | Prisma |
 | Authentication | NextAuth.js v5 (Auth.js) |
-| AI | OpenAI GPT-4o-mini |
+| AI | Groq Llama 3.3 70B (free) |
 | Styling | Tailwind CSS |
 | UI Components | Radix UI + shadcn/ui patterns |
 | Deployment | Vercel |
@@ -48,13 +48,13 @@ A full-stack recipe management application built with Next.js, Prisma, and AI-po
 ### Prerequisites
 - Node.js 18.17+ 
 - A PostgreSQL database (recommended: [Neon](https://neon.tech) free tier)
-- OpenAI API key (for AI features)
+- Groq API key (free at [console.groq.com](https://console.groq.com))
 
 ### Setup
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/recipe-app.git
+   git clone https://github.com/Ali-Mansourr/recipe-app.git
    cd recipe-app
    ```
 
@@ -72,7 +72,7 @@ A full-stack recipe management application built with Next.js, Prisma, and AI-po
    - `AUTH_SECRET` — Run `npx auth secret` or use any random string
    - `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` — From [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
    - `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` — From [GitHub Developer Settings](https://github.com/settings/developers)
-   - `OPENAI_API_KEY` — From [OpenAI Platform](https://platform.openai.com/api-keys)
+   - `GROQ_API_KEY` — From [Groq Console](https://console.groq.com/keys)
 
 4. **Set up the database**
    ```bash
