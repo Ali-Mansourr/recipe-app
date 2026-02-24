@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const dynamic = "force-dynamic";
 
@@ -10,15 +11,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: "OpenAI API key not configured" },
+        { error: "Gemini API key not configured" },
         { status: 503 }
       );
     }
 
-    const OpenAI = (await import("openai")).default;
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 2000,
+        responseMimeType: "application/json",
+      },
+    });
 
     const { prompt, type } = await req.json();
 
@@ -74,29 +82,23 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Invalid AI type" }, { status: 400 });
     }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 2000,
-      response_format: { type: "json_object" },
-    });
+    const result = await model.generateContent([
+      { text: systemPrompt },
+      { text: userPrompt },
+    ]);
 
-    const content = completion.choices[0]?.message?.content;
+    const content = result.response.text();
     if (!content) {
       return NextResponse.json({ error: "No response from AI" }, { status: 500 });
     }
 
-    const result = JSON.parse(content);
-    return NextResponse.json(result);
+    const parsed = JSON.parse(content);
+    return NextResponse.json(parsed);
   } catch (error: any) {
     console.error("AI error:", error);
-    if (error?.code === "insufficient_quota") {
+    if (error?.status === 429) {
       return NextResponse.json(
-        { error: "OpenAI quota exceeded. Please check your API key." },
+        { error: "Rate limit exceeded. Please try again in a moment." },
         { status: 429 }
       );
     }
