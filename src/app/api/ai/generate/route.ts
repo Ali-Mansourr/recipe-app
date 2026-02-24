@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
 export const dynamic = "force-dynamic";
 
@@ -11,22 +11,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.GROQ_API_KEY) {
       return NextResponse.json(
-        { error: "Gemini API key not configured" },
+        { error: "AI API key not configured" },
         { status: 503 }
       );
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 2000,
-        responseMimeType: "application/json",
-      },
-    });
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const { prompt, type } = await req.json();
 
@@ -82,31 +74,31 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Invalid AI type" }, { status: 400 });
     }
 
-    const result = await model.generateContent([
-      { text: systemPrompt },
-      { text: userPrompt },
-    ]);
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 2000,
+      response_format: { type: "json_object" },
+    });
 
-    const content = result.response.text();
+    const content = completion.choices[0]?.message?.content;
     if (!content) {
       return NextResponse.json({ error: "No response from AI" }, { status: 500 });
     }
 
-    const parsed = JSON.parse(content);
-    return NextResponse.json(parsed);
+    const result = JSON.parse(content);
+    return NextResponse.json(result);
   } catch (error: any) {
     console.error("AI error:", error?.message || error);
     const message = error?.message || "";
-    if (error?.status === 429 || message.includes("429") || message.includes("RATE_LIMIT")) {
+    if (error?.status === 429 || message.includes("429") || message.includes("rate_limit")) {
       return NextResponse.json(
         { error: "Rate limit exceeded. Please try again in a moment." },
         { status: 429 }
-      );
-    }
-    if (message.includes("API_KEY_INVALID") || message.includes("API key not valid")) {
-      return NextResponse.json(
-        { error: "Invalid API key. Please check your Gemini API key." },
-        { status: 401 }
       );
     }
     return NextResponse.json(
